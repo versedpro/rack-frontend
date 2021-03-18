@@ -4,6 +4,10 @@ import { useActiveWeb3React } from '../../../hooks'
 import styled from "styled-components";
 import logo from "../../../assets/images/logo.png";
 import DepositModal from './subcomponent/DespositModal';
+import { UnsupportedChainIdError, useWeb3React } from '@web3-react/core'
+import useSWR from 'swr'
+import { Web3Provider } from '@ethersproject/providers'
+
 interface Item {
   item: any;
 }
@@ -22,6 +26,18 @@ const VaultsListItem: React.FC<Item> = ({ item }) => {
        }
       
     }
+    
+    const { account, library } = useWeb3React<Web3Provider>()
+
+    const fetcher = (library:any) => (...args:any[]) => {
+      const [method, ...params] = args
+      console.log(method, params)
+      return library[method](...params)
+    }
+
+    const { data: balance } = useSWR(['getBalance', account, 'latest'], {
+      fetcher: fetcher(library),
+    })
   return (
     <StyledVaultsListItemContainer>
       <StyledVaultsListItemContent onClick={()=>onCollapse(item.name)}>
@@ -76,7 +92,7 @@ const VaultsListItem: React.FC<Item> = ({ item }) => {
                   </WalletTitle>
                   <WalletValue>
                     <span style={{ color: "#6c757d", fontSize: "0.9em" }}>
-                     --
+                      { balance? <div>Balance: {balance.toString()}</div> : <div>--</div> }
                     </span>
                   </WalletValue>
                 </WalletContent>
