@@ -7,6 +7,7 @@ import DepositModal from './subcomponent/DespositModal';
 import { UnsupportedChainIdError, useWeb3React } from '@web3-react/core'
 import useSWR from 'swr'
 import { Web3Provider } from '@ethersproject/providers'
+import { formatEther } from '@ethersproject/units'
 
 interface Item {
   item: any;
@@ -92,7 +93,7 @@ const VaultsListItem: React.FC<Item> = ({ item }) => {
                   </WalletTitle>
                   <WalletValue>
                     <span style={{ color: "#6c757d", fontSize: "0.9em" }}>
-                      { balance? <div>Balance: {balance.toString()}</div> : <div>--</div> }
+                      { balance? <div>Balance: {parseFloat(formatEther(balance)).toPrecision(4)}</div> : <div>--</div> }
                     </span>
                   </WalletValue>
                 </WalletContent>
