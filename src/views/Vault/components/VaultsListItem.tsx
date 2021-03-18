@@ -8,6 +8,7 @@ import { UnsupportedChainIdError, useWeb3React } from '@web3-react/core'
 import useSWR from 'swr'
 import { Web3Provider } from '@ethersproject/providers'
 import { formatEther } from '@ethersproject/units'
+import axios from 'axios';
 
 interface Item {
   item: any;
@@ -16,6 +17,7 @@ const VaultsListItem: React.FC<Item> = ({ item }) => {
     const [collapse,setCollapse] = React.useState('');
     const [check,setCheck] = React.useState(false);
     const [deposit,setDespoit] = React.useState(false);
+    const [bnbUsd, setBnbUsd] = React.useState<any>(0);
     const onCollapse =(name:string) =>{
        if(check){
          setCollapse('');
@@ -29,7 +31,7 @@ const VaultsListItem: React.FC<Item> = ({ item }) => {
     }
     
     const { account, library } = useWeb3React<Web3Provider>()
-
+    
     const fetcher = (library:any) => (...args:any[]) => {
       const [method, ...params] = args
       console.log(method, params)
@@ -39,6 +41,17 @@ const VaultsListItem: React.FC<Item> = ({ item }) => {
     const { data: balance } = useSWR(['getBalance', account, 'latest'], {
       fetcher: fetcher(library),
     })
+    const calculateBalance = (bnbBalance : any) => {
+      return bnbBalance * bnbUsd
+    }
+    const getData = async() =>{
+      const _bnbUsd : any = await axios.get(`https://api.binance.com/api/v1/ticker/price?symbol=BNBUSDT`);
+      setBnbUsd(_bnbUsd.data.price);
+    }
+    useEffect(() => {
+      getData();
+    },[])
+
   return (
     <StyledVaultsListItemContainer>
       <StyledVaultsListItemContent onClick={()=>onCollapse(item.name)}>
@@ -74,7 +87,7 @@ const VaultsListItem: React.FC<Item> = ({ item }) => {
                 <span style={{ color: "#6c757d" }}>{item.tvl}</span>
               </StyledVaultsListHeaderContentItem1>
               <StyledVaultsListHeaderContentItem1>
-            <span style={{ color: "#6c757d" }}>--</span>
+            <span style={{ color: "#6c757d" }}>{balance? <div>${calculateBalance(balance)}</div> : <div>--</div>}</span>
               </StyledVaultsListHeaderContentItem1>
             </StyledVaultsListHeaderContentRow>
           </StyledVaultsListHeaderContent1>
