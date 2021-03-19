@@ -137,7 +137,7 @@ const CalculatePrice: React.FC<Balance> = ({ balance, name }) => {
   if(!balance){
     return <div>--</div>;
   }
-  return <div>${ balance * usdPrice / 1e18 }</div>
+  return <div>${ parseInt((balance * usdPrice / 1e18).toString()) }</div>
 }
 
 const VaultsListItem: React.FC<Item> = ({ item }) => {
@@ -192,7 +192,11 @@ const VaultsListItem: React.FC<Item> = ({ item }) => {
                 <span style={{ color: "#6c757d" }}>{item.tvl}</span>
               </StyledVaultsListHeaderContentItem1>
               <StyledVaultsListHeaderContentItem1>
-                <span style={{ color: "#6c757d" }}><CalculatePrice balance={bal} name={item.name}/></span>
+                <span style={{ color: "#6c757d" }}>
+                  {
+                    item.name !== "Rack" ? ( <CalculatePrice balance={bal} name={item.name}/> ) : <div>--</div>
+                  }
+                </span>
               </StyledVaultsListHeaderContentItem1>
             </StyledVaultsListHeaderContentRow>
           </StyledVaultsListHeaderContent1>
