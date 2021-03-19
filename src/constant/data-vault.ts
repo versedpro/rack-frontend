@@ -42,7 +42,8 @@ export const vaultData=[
         'rack-weight':"0.5X",
         'wallet':'',
         'vault':"",
-        'pending':""
+        'pending':"",
+        'address': process.env.REACT_APP_BUSD_ADDRESS
     },
     {
         'name':"CAKE",
@@ -57,6 +58,7 @@ export const vaultData=[
         'rack-weight':"0.5X",
         'wallet':'',
         'vault':"",
-        'pending':""
+        'pending':"",
+        'address': process.env.REACT_APP_CAKE_ADDRESS
     }
 ]

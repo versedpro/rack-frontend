@@ -1,16 +1,151 @@
 import React,{ useCallback, useContext, useEffect, useMemo, useState }  from 'react'
-import { CurrencyAmount, JSBI, Token, Trade } from '@pancakeswap-libs/sdk'
+import { CurrencyAmount, JSBI, Trade } from '@pancakeswap-libs/sdk'
 import { useActiveWeb3React } from '../../../hooks'
 import styled from "styled-components";
 import logo from "../../../assets/images/logo.png";
 import DepositModal from './subcomponent/DespositModal';
+import { UnsupportedChainIdError, useWeb3React } from '@web3-react/core'
+import useSWR from 'swr'
+import { Web3Provider } from '@ethersproject/providers'
+import { formatEther, formatUnits } from '@ethersproject/units'
+import axios from 'axios'
+import ERC20ABI from '../../../constant/abi/erc20.json'
+import { isAddress } from '@ethersproject/address'
+import { Contract } from '@ethersproject/contracts'
+
 interface Item {
   item: any;
 }
+
+interface Bnb {
+  setBalance: any;
+}
+
+interface Tokens {
+  address: string;
+  decimals: number;
+  setBalance: any;
+}
+
+interface Balance {
+  balance: any;
+  name: string;
+}
+
+const fetcher = (library: any, abi?: any) => (...args:any[]) => {
+  const [arg1, arg2, ...params] = args
+  // it's a contract
+  if (isAddress(arg1)) {
+    const address = arg1
+    const method = arg2
+    const contract = new Contract(address, abi, library.getSigner())
+    return contract[method](...params)
+  }
+  // it's a eth call
+  const method = arg1
+  return library[method](arg2, ...params)
+}
+
+export const BnbBalance: React.FC<Bnb> = ({ setBalance }) => {
+  const { account, library } = useWeb3React<Web3Provider>()
+  const { data: balance, mutate } = useSWR(['getBalance', account, 'latest'], {
+    fetcher: fetcher(library, ERC20ABI),
+  })
+
+  useEffect(() => {
+    // listen for changes on an Ethereum address
+    console.log(`listening for blocks...`)
+    if (library) {
+      library.on('block', () => {
+        console.log('update balance...')
+        mutate(undefined, true)
+      })
+      // remove listener when the component is unmounted
+      return () => {
+        library.removeAllListeners('block')
+      }
+    }
+    // trigger the effect only on component mount
+  }, [])
+
+  useEffect(() => {
+    setBalance(balance)
+  },[balance])
+  
+  if (!balance) {
+    return <div>--</div>
+  }
+  return <div>{parseFloat(formatEther(balance)).toPrecision(4)}</div>
+}
+
+export const TokenBalance: React.FC<Tokens> = ({ address, decimals, setBalance }) => {
+  const { account, library } = useWeb3React<Web3Provider>()
+  const { data: balance, mutate } = useSWR([address, 'balanceOf', account], {
+    fetcher: fetcher(library, ERC20ABI),
+  })
+
+  useEffect(() => {
+    // listen for changes on an Ethereum address
+    console.log(`listening for Transfer...`)
+    if (library) {
+      const contract = new Contract(address, ERC20ABI, library.getSigner())
+      const fromMe = contract.filters.Transfer(account, null)
+      library.on(fromMe, (from, to, amount, event) => {
+        console.log('Transfer|sent', { from, to, amount, event })
+        mutate(undefined, true)
+      })
+      const toMe = contract.filters.Transfer(null, account)
+      library.on(toMe, (from, to, amount, event) => {
+        console.log('Transfer|received', { from, to, amount, event })
+        mutate(undefined, true)
+      })
+      // remove listener when the component is unmounted
+      return () => {
+        library.removeAllListeners(toMe)
+        library.removeAllListeners(fromMe)
+      }
+    }
+
+    
+    // trigger the effect only on component mount
+  }, [])
+
+  useEffect(() => {
+    setBalance(balance)
+  },[balance])
+  
+  if (!balance) {
+    return <div>--</div>
+  }
+  return (
+    <div>
+      {parseFloat(formatUnits(balance, decimals)).toPrecision(4)}
+    </div>
+  )
+}
+
+const CalculatePrice: React.FC<Balance> = ({ balance, name }) => {
+  const [usdPrice, setBnbUsd] = React.useState<any>(0);
+  const getData = async() =>{
+    const _usdPrice : any = await axios.get(`https://api.binance.com/api/v1/ticker/price?symbol=${name}USDT`);
+    setBnbUsd(_usdPrice.data.price);
+  }
+  useEffect(() => {
+    getData();
+  },[])
+
+  if(!balance){
+    return <div>--</div>;
+  }
+  return <div>${ parseInt((balance * usdPrice / 1e18).toString()) }</div>
+}
+
 const VaultsListItem: React.FC<Item> = ({ item }) => {
     const [collapse,setCollapse] = React.useState('');
     const [check,setCheck] = React.useState(false);
     const [deposit,setDespoit] = React.useState(false);
+    const [bal, setBalance] = React.useState(0);
+
     const onCollapse =(name:string) =>{
        if(check){
          setCollapse('');
@@ -20,8 +155,8 @@ const VaultsListItem: React.FC<Item> = ({ item }) => {
            setCollapse(name);
            setCheck(true);
        }
-      
     }
+    
   return (
     <StyledVaultsListItemContainer>
       <StyledVaultsListItemContent onClick={()=>onCollapse(item.name)}>
@@ -57,7 +192,11 @@ const VaultsListItem: React.FC<Item> = ({ item }) => {
                 <span style={{ color: "#6c757d" }}>{item.tvl}</span>
               </StyledVaultsListHeaderContentItem1>
               <StyledVaultsListHeaderContentItem1>
-            <span style={{ color: "#6c757d" }}>--</span>
+                <span style={{ color: "#6c757d" }}>
+                  {
+                    item.name !== "Rack" ? ( <CalculatePrice balance={bal} name={item.name}/> ) : <div>--</div>
+                  }
+                </span>
               </StyledVaultsListHeaderContentItem1>
             </StyledVaultsListHeaderContentRow>
           </StyledVaultsListHeaderContent1>
@@ -76,7 +215,9 @@ const VaultsListItem: React.FC<Item> = ({ item }) => {
                   </WalletTitle>
                   <WalletValue>
                     <span style={{ color: "#6c757d", fontSize: "0.9em" }}>
-                     --
+                        {
+                          item.name == "BNB" ? ( <BnbBalance setBalance = {setBalance}/>) : (<TokenBalance address={item.address} decimals = {18} setBalance = {setBalance} />)
+                        }
                     </span>
                   </WalletValue>
                 </WalletContent>
