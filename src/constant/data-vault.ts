@@ -43,7 +43,7 @@ export const vaultData=[
         'wallet':'',
         'vault':"",
         'pending':"",
-        'address': "0xf89bfaefcea6062e37e536a243669d1b028b9fc7"
+        'address': process.env.REACT_APP_BUSD_ADDRESS
     },
     {
         'name':"CAKE",
@@ -59,6 +59,6 @@ export const vaultData=[
         'wallet':'',
         'vault':"",
         'pending':"",
-        'address': "0x804a1440e73a563bfc545f001b4dde120f4c2b8e"
+        'address': process.env.REACT_APP_CAKE_ADDRESS
     }
 ]
