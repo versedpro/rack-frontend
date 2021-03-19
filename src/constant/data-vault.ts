@@ -42,7 +42,8 @@ export const vaultData=[
         'rack-weight':"0.5X",
         'wallet':'',
         'vault':"",
-        'pending':""
+        'pending':"",
+        'address': "0xf89bfaefcea6062e37e536a243669d1b028b9fc7"
     },
     {
         'name':"CAKE",
@@ -57,6 +58,7 @@ export const vaultData=[
         'rack-weight':"0.5X",
         'wallet':'',
         'vault':"",
-        'pending':""
+        'pending':"",
+        'address': "0x804a1440e73a563bfc545f001b4dde120f4c2b8e"
     }
 ]
